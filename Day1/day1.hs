@@ -2,7 +2,7 @@ module Main where
 
 main = do
     txt <- readFile "day1.txt"
-    let nums = read <$> lines txt -- read input, split on \n, convert to [Int]
+    let nums = read <$> lines txt
     print (increases nums)
     print (increasesThree nums)
 
@@ -18,9 +18,7 @@ increases (x:y:xs)
 
 -- count increases in three unit windows
 increasesThree :: [Int] -> Int
-increasesThree [] = 0
-increasesThree [_,_] = 0
-increasesThree [_,_,_] = 0
 increasesThree all@(w:_:_:z:xs)
     | w < z = 1 + increasesThree(tail all)
     | otherwise = increasesThree(tail all)
+increasesThree _ = 0
