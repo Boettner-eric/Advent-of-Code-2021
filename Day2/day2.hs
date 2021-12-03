@@ -16,7 +16,7 @@ travelDistance ((command, unit):xs) = case command of
                                         "up" -> zipWith (+) (travelDistance xs) [0, (-1) * unit]
                                         "down" -> zipWith (+) (travelDistance xs) [0, unit]
 
--- function that takes commands and outputs aim, depth and horizontal travel
+-- function that takes commands and current aim and outputs depth and horizontal travel
 aimTravel :: Int -> [(String, Int)] -> [Int]
 aimTravel _ [] = [0,0]
 aimTravel i ((command, unit):xs) = case command of
