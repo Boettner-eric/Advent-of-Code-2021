@@ -1,5 +1,3 @@
-import Data.Char
-import Data.Bool(bool)
 import Data.Char (digitToInt)
 import Data.List (foldl')
 
@@ -15,8 +13,9 @@ main = do
 
 -- get most common/least common digit in each position
 part1 :: Int -> [String] -> Bool -> String
+part1 _ [] _ = []
 part1 i list op
-    | i < (length (head list)) = [(compColumn (0,0) i list op)] ++ part1 (i+1) list op
+    | i < (length (head list)) = [compColumn (0,0) i list op] ++ part1 (i+1) list op
     | otherwise = ""
 
 -- filter all data with char at index n
@@ -31,10 +30,11 @@ part2 n list op = part2 (n+1) (filterFn n (compColumn (0,0) n list op) list) op
 
 -- compare the number of ones and zeros in eac column
 compColumn :: (Int, Int) -> Int -> [String] -> Bool -> Char
-compColumn (ones, zeros) n [] op = if ((ones < zeros) /= op) then '0' else '1'
+compColumn (ones, zeros) n [] op = if ((ones < zeros) /= op) then '0' else '1' -- XOR with operator
 compColumn (ones, zeros) n (x:xs) op = if (x !! n) == '1'
     then compColumn (ones+1, zeros) n xs op
     else compColumn (ones, zeros+1) n xs op
 
+-- from internet
 toDec :: String -> Int
 toDec = foldl' (\acc x -> acc * 2 + digitToInt x) 0
