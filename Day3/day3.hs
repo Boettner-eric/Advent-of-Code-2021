@@ -9,9 +9,9 @@ main = do
     let epsilon = toDec (part1 0 dataset True)
     let gamma = toDec (part1 0 dataset False)
     print (epsilon * gamma)
-    let ox = part2 0 dataset True
-    let co2 = part2 0 dataset False
-    print (toDec ox * toDec co2)
+    let ox = toDec (part2 0 dataset True)
+    let co2 = toDec (part2 0 dataset False)
+    print (ox * co2)
 
 -- get most common/least common digit in each position
 part1 :: Int -> [String] -> Bool -> String
@@ -31,10 +31,10 @@ part2 n list op = part2 (n+1) (filterFn n (compColumn (0,0) n list op) list) op
 
 -- compare the number of ones and zeros in eac column
 compColumn :: (Int, Int) -> Int -> [String] -> Bool -> Char
-compColumn (ones, zeros) n [] op = if ((ones > zeros) /= op) then '0' else '1'
+compColumn (ones, zeros) n [] op = if ((ones < zeros) /= op) then '0' else '1'
 compColumn (ones, zeros) n (x:xs) op = if (x !! n) == '1'
-    then compColumn (ones, zeros+1) n xs op
-    else compColumn (ones+1, zeros) n xs op
+    then compColumn (ones+1, zeros) n xs op
+    else compColumn (ones, zeros+1) n xs op
 
 toDec :: String -> Int
 toDec = foldl' (\acc x -> acc * 2 + digitToInt x) 0
