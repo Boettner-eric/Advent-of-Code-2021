@@ -1,34 +1,40 @@
 import Data.Char
 import Data.Bool(bool)
+import Data.Char (digitToInt)
+import Data.List (foldl')
 
 main = do
     txt <- readFile "day3.txt"
-    let binary = splitBinary (lines txt)
-    let epsilon = convertSum True <$> binary
-    let gamma = convertSum False <$> binary
-    print (bintodec epsilon * bintodec gamma)
+    let dataset = lines txt
+    let epsilon = toDec (part1 0 dataset True)
+    let gamma = toDec (part1 0 dataset False)
+    print (epsilon * gamma)
+    let ox = part2 0 dataset True
+    let co2 = part2 0 dataset False
+    print (toDec ox * toDec co2)
 
--- take sum of digits and convert to bool
--- True -> GCB, False -> LCB
-convertSum :: Bool -> Int -> Bool
-convertSum True x = x > 500
-convertSum _ x = x < 500
+-- get most common/least common digit in each position
+part1 :: Int -> [String] -> Bool -> String
+part1 i list op
+    | i < (length (head list)) = [(compColumn (0,0) i list op)] ++ part1 (i+1) list op
+    | otherwise = ""
 
--- part 2
--- take convertSum and if True filter out starting in 0 else 1
--- if even then pick the one
+-- filter all data with char at index n
+filterFn :: Int -> Char -> [String] -> [String]
+filterFn _ _ [] = []
+filterFn n cond (x:xs) = if (x !! n == cond) then [x] ++ filterFn n cond xs else filterFn n cond xs
 
--- convert string of digits to array of ints
-binString :: String -> [Int]
-binString [] = []
-binString (x:xs) = [ord x - 48] ++ (binString xs)
+-- call filter Fn until there is only two/one num left
+part2 :: Int -> [String] -> Bool -> String
+part2 _ [x] op = x -- correct value
+part2 n list op = part2 (n+1) (filterFn n (compColumn (0,0) n list op) list) op
 
--- add each power or digit together
-splitBinary :: [String] -> [Int]
-splitBinary [] = take 12 (repeat 0) -- fill empty array
-splitBinary (x:xs) = zipWith (+) (binString x) (splitBinary xs)
+-- compare the number of ones and zeros in eac column
+compColumn :: (Int, Int) -> Int -> [String] -> Bool -> Char
+compColumn (ones, zeros) n [] op = if ((ones > zeros) /= op) then '0' else '1'
+compColumn (ones, zeros) n (x:xs) op = if (x !! n) == '1'
+    then compColumn (ones, zeros+1) n xs op
+    else compColumn (ones+1, zeros) n xs op
 
--- had to look this one up due to lack of knowledge
---https://stackoverflow.com/questions/56663207/binary-to-decimal-in-haskell-without-using-recursion-or-list-comprehensions?rq=1
-bintodec :: (Foldable f, Integral i) => f Bool -> i
-bintodec = foldl (\a -> (+) (2*a) . bool 0 1) 0
+toDec :: String -> Int
+toDec = foldl' (\acc x -> acc * 2 + digitToInt x) 0
