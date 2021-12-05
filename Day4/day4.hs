@@ -30,7 +30,7 @@ part2 (x:xs) boards winners results = if bingos /= []
     else part2 xs updated winners results
     where
         updated = markBoards x boards -- mark all the boards w/ X
-        (_, bingos) = filterWinners updated updated [] -- search all boards for bingo
+        (filtered, bingos) = filterWinners updated updated [] -- search all boards for bingo
         -- filtered = filter (\n -> n `elem` bingos) updated) working on better filtering
 
 -- can't use sum bc of -1s that mark board
@@ -47,7 +47,7 @@ filterWinners i (x:xs) winners = if (check 0 x)
     then filterWinners (filter (\n -> n /= x) i) xs (winners ++ x)
     else filterWinners i xs winners
 
--- search boards for winning board and return it
+-- search boards for first winning board and return it
 findWinner :: [[Int]] -> [Int]
 findWinner [] = []
 findWinner (x:xs) = if (check 0 x) then x else findWinner xs
