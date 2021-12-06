@@ -27,4 +27,4 @@ aimTravel i ((command, unit):xs) = case command of
 -- helper function to change data from two dim String to array of tuple (String, Int)
 convertData :: [[String]] -> [(String, Int)]
 convertData [] = []
-convertData (x:xs) = [(head x, read (last x))] ++ convertData xs
+convertData (x:xs) = (head x, read (last x)) : convertData xs

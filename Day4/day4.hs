@@ -1,4 +1,4 @@
-import Data.List (findIndices, transpose)
+import Data.List (findIndices)
 
 main = do
     txt <- readFile "day4.txt"
@@ -44,7 +44,7 @@ calculateScore (x:xs)
 filterWinners :: [[Int]] -> [[Int]] -> [Int] -> ([[Int]], [Int])
 filterWinners i [] winners = (i, winners)
 filterWinners i (x:xs) winners = if (check 0 x)
-    then filterWinners (filter (\n -> n /= x) i) xs (winners ++ x)
+    then filterWinners (filter (/=x) i) xs (winners ++ x)
     else filterWinners i xs winners
 
 -- search boards for first winning board and return it
@@ -70,7 +70,7 @@ makeBoard :: [String] -> [[Int]]
 makeBoard [] = []
 makeBoard (x:xs)
     | x == "" = makeBoard xs
-    | otherwise = [map read (words x) :: [Int]] ++ makeBoard xs
+    | otherwise = (map read (words x) :: [Int]) : makeBoard xs
 
 -- mark each instance of num on boards
 markBoards :: Int -> [[Int]] -> [[Int]]

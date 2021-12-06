@@ -15,13 +15,13 @@ main = do
 part1 :: Int -> [String] -> Bool -> String
 part1 _ [] _ = []
 part1 i list op
-    | i < (length (head list)) = [compColumn (0,0) i list op] ++ part1 (i+1) list op
+    | i < (length (head list)) = (compColumn (0,0) i list op) : part1 (i+1) list op
     | otherwise = ""
 
 -- filter all data with char at index n
 filterFn :: Int -> Char -> [String] -> [String]
 filterFn _ _ [] = []
-filterFn n cond (x:xs) = if (x !! n == cond) then [x] ++ filterFn n cond xs else filterFn n cond xs
+filterFn n cond (x:xs) = if (x !! n == cond) then x : filterFn n cond xs else filterFn n cond xs
 
 -- call filter Fn until there is only two/one num left
 part2 :: Int -> [String] -> Bool -> String
