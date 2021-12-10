@@ -1,4 +1,3 @@
-
 import Data.List (sort)
 
 main = do
