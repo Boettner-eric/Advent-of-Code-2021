@@ -1,61 +1,78 @@
 import Data.List (sort)
 
 main = do
-    txt <- readFile "day9.txt"
+    txt <- readFile "day11.txt"
     let input = formatInput (lines txt)
-    let points = lowPoints (0,0) input
-    let part1 = lookupPoints input points
-    print (sum (part1) + length (part1)) -- add one for each basin
-    let part2 = sort (map (\i -> findBasin input [] [i]) points); -- sort results by size
-    print (product (drop ((length part2) - 3) part2)) -- product of top 3 basin sizes
+    print (steps input 0 100)
+    print (allFlash input)
 
 formatInput :: [String] -> [[Int]]
 formatInput [] = []
 formatInput (x:xs) = map (\i -> read (i:[]) :: Int) x : formatInput xs
 
+steps :: [[Int]] -> Int -> Int -> ([[Int]], Int)
+steps points flashes 0 = (points, flashes)
+steps points flashes i = steps newPoints (flashes + newFlashes) (i-1)
+    where
+        (newPoints, newFlashes) = step points
 
-step :: [[Int]] -> [[Int]]
-step [] = []
-step list = addOne list
 
+allFlash :: [[Int]] -> Int
+allFlash points = if all (==True) (map (all (==0)) newPoints) then 1 else 1 + allFlash newPoints
+    where
+        (newPoints, _) = step points
+
+
+step :: [[Int]] -> ([[Int]], Int)
+step [] = ([],0)
+step list = (settleDown updatedpoints, flashes)
+    where
+        addlist = addOne list
+        startingPoints = search addlist (0,0) -- list of points > 9  [(Int, Int)]
+        (flashes, updatedpoints) = propagate addlist startingPoints 0
+
+--First, the energy level of each octopus increases by 1.
 addOne :: [[Int]] -> [[Int]]
 addOne [] = []
-addOne (x:xs) = map (+1) x : step xs
+addOne (x:xs) = map (+1) x : addOne xs
 
---Then, any octopus with an energy level greater than 9 flashes. This increases the energy level of all adjacent octopuses by 1, including octopuses that are diagonally adjacent. If this causes an octopus to have an energy level greater than 9, it also flashes. This process continues as long as new octopuses keep having their energy level increased beyond 9. (An octopus can only flash at most once per step.)
-
-
+--Finally, any octopus that flashed during this step has its energy level set to 0, as it used all of its energy to flash.
 settleDown :: [[Int]] -> [[Int]]
 settleDown [] = []
-settleDown (x:xs) = map (\i -> if i > 9 then 0 else i) : settleDown xs
+settleDown (x:xs) = map (\i -> if i > 9 then 0 else i) x : settleDown xs
 
-
--- find values for each point in an array of points
+-- Update values for each point in an array of points
 updatePoints :: [[Int]] -> [(Int,Int)] -> [[Int]]
-updatePoints _ [] = []
+updatePoints points [] = points
 updatePoints points ((i,j):xs) -- omit invalid indices
     | i < 0 || j < 0 || j >= length points || i >= length (points !! 0) = updatePoints points xs
-    | otherwise = updatePoints (beginning ++ end') xs
+    | otherwise = updatePoints (beginY ++ endY') xs
         where
-            (beginning, end) = splitAt j points
-            desired = head end
-            desired' = i:desired
-            end' = desired' : (tail end)
+            (beginY, endY) = splitAt j points
+            (beginX, _:endX) = splitAt i (endY !! 0)
+            endY' = (beginX ++ ((points !! j !! i) + 1):endX) : (tail endY)
 
--- find all the low points (less than all neighbors)
-lowPoints :: (Int, Int) -> [[Int]] -> [(Int,Int)]
-lowPoints (i,j) points
-    | i >= length (points !! 0) = lowPoints (0, j+1) points
+lookupSafe :: [[Int]] -> (Int, Int) -> Int
+lookupSafe [] _ = 0
+lookupSafe points (i,j)
+    | i < 0 || j < 0 || j >= length points || i >= length (points !! 0) = 0
+    | otherwise = points !! j !! i
+
+-- get all points > 9
+search :: [[Int]] -> (Int, Int) -> [(Int, Int)]
+search points (i,j)
     | j >= length points = []
-    | otherwise = if (all (>(points !! j !! i)) (lookupPoints points [(i-1, j), (i+1,j), (i,j-1), (i,j+1)]))
-        then (i,j) : lowPoints (i+1,j) points
-        else lowPoints (i+1,j) points
+    | i >= length (points !! 0) = search points (0,j+1)
+    | (points !! j !! i) > 9 = (i,j) : search points (i+1,j)
+    | otherwise = search points (i+1, j)
 
---           graph      visited           queue         size of basin
-findBasin :: [[Int]] -> [(Int, Int)] -> [(Int, Int)] -> Int
-findBasin _ _ [] = 0
-findBasin points visited ((i,j):queue)
-    | i < 0 || j < 0 || j >= length points || i >= length (points !! 0) = findBasin points ((i,j) : visited) queue
-    | (i,j) `elem` visited = findBasin points ((i,j) : visited) queue
-    | (points !! j !! i) >= 9 = findBasin points ((i,j) : visited) queue
-    | otherwise = 1 + findBasin points ((i,j) : visited) (queue ++ [(i-1,j),(i+1,j),(i,j-1),(i,j+1)])
+--           graph       queue          flashes # of flashes and point graph
+propagate :: [[Int]] -> [(Int, Int)] -> Int -> (Int, [[Int]])
+propagate points [] flashes = (flashes, points)
+propagate points ((i,j):queue) flashes
+    | i < 0 || j < 0 || j >= length points || i >= length (points !! 0) = propagate points queue flashes
+    | otherwise = propagate newPoints updatedQueue (flashes + 1)
+        where
+            neighbors = [(i-1,j-1),(i-1,j),(i-1,j+1),(i+1,j-1),(i+1,j),(i+1,j+1),(i,j-1),(i,j+1)]
+            newPoints = updatePoints points neighbors
+            updatedQueue = (filter (\n -> (lookupSafe newPoints n) == 10) neighbors) ++ queue
