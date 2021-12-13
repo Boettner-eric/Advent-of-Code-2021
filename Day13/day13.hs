@@ -1,15 +1,13 @@
 import Data.Set (fromList, toList)
 import Data.List (nub)
-import System.IO
+import Text.Parsec
 
 main = do
     txt <- readFile "day13.txt"
-    let cords = map (convertCoords) (lines txt)
-    let part1 = folds [('x', 655)] cords
+    let (Right (cords, instructions)) = parse parser "" txt
+    let part1 = folds [(head instructions)] cords
     print (length (nub part1))
-    -- I need to automate / learn parsing better in haskell
-    let foldList = [('x',655), ('y',447), ('x',327), ('y',223), ('x',163),('y',111), ('x',81), ('y',55), ('x',40), ('y',27), ('y',13), ('y',6)]
-    let part2 = folds foldList cords
+    let part2 = folds instructions cords
     let (xBound, yBound) = getBounds part2 (0,0)
     putStr (draw part2 (xBound+1, yBound+1) (0,0))
 
@@ -19,11 +17,18 @@ folds ((dir, x):xs) paper = case dir of
     'y' -> folds xs (foldPaper paper (0, x))
     'x' -> folds xs (foldPaper paper (x, 0))
 
+foldPaper :: [(Int, Int)] -> (Int,Int) -> [(Int,Int)]
+foldPaper [] _ = []
+foldPaper ((x,y):xs) (i,j)
+    | i == 0 = (if y > j then (x, (j*2) - y) else (x, y)) : foldPaper xs (i,j)
+    | j == 0 = (if x > i then ((i*2) - x, y) else (x, y)) : foldPaper xs (i,j)
+    | otherwise = [] -- always only one fold
+
 draw :: [(Int,Int)] -> (Int,Int) -> (Int,Int) -> [Char]
 draw points (i,j) (x,y)
     | j == y = []
     | i == x = '\n' : draw points (i,j) (0,y+1)
-    | otherwise = (if (checkPoints points (x,y)) then '#' else ' ') : draw points (i,j) (x+1,y)
+    | otherwise = (if (checkPoints points (x,y)) then '█' else ' ') : draw points (i,j) (x+1,y)
 
 checkPoints :: [(Int,Int)] -> (Int,Int) -> Bool
 checkPoints [] _ = False
@@ -33,20 +38,20 @@ getBounds :: [(Int,Int)] -> (Int, Int) -> (Int, Int)
 getBounds [] (i,j) = (i,j)
 getBounds ((x,y):xs) (i,j) = getBounds xs (max i x, max j y)
 
-convertCoords :: String -> (Int, Int)
-convertCoords a = (head parsed, last parsed)
-    where
-        parsed = map read (splitl (==',') a) :: [Int]
+-- I looked at https://github.com/DestyNova/advent_of_code_2021/blob/main/day13/Part1.hs to help understand Parsec - I need to do more research to better my understanding here
+parser :: Parsec String () ([(Int, Int)], [(Char, Int)])
+parser = do
+    cords <- do {[x,y] <- number `sepBy1` char ','; return (x,y)} `sepEndBy1` newline
+    newline -- data/instructions are separated by a newline
+    instructions <- foldInstruction `sepEndBy1` newline
+    return (cords, instructions)
+-- this is way better than the original solution
+foldInstruction = do
+    string "fold along "
+    dir <- char 'x' <|> char 'y'
+    char '='
+    v <- number
+    return (dir, v)
 
-foldPaper :: [(Int, Int)] -> (Int,Int) -> [(Int,Int)]
-foldPaper [] _ = []
-foldPaper ((x,y):xs) (i,j)
-    | i == 0 = (if y > j then (x, (j*2) - y) else (x, y)) : foldPaper xs (i,j)
-    | j == 0 = (if x > i then ((i*2) - x, y) else (x, y)) : foldPaper xs (i,j)
-    | otherwise = [] -- always only one fold
-
-splitl :: (Char -> Bool) -> String -> [String]
-splitl p s =  case dropWhile p s of
-                      "" -> []
-                      s' -> w : splitl p s''
-                            where (w, s'') = break p s'
+number :: Parsec String () Int
+number = read <$> many1 digit
